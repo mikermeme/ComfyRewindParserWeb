@@ -1,7 +1,10 @@
 prefab_name,buildable,Drop1,Drop1Chance,Drop2,Drop2Chance,Drop3,Drop3Chance,Drop4,Drop4Chance,Drop5,Drop5Chance
+Beehive,FALSE,QueenBee,1,,,,,,,,
 MineRock_Tin,FALSE,TinOre,3.5,,,,,,,,
+MineRock_Copper,FALSE,CopperOre,13,Stone,26,,,,,,
 rock4_copper,FALSE,CopperOre,130,Stone,260,,,,,,
 rock4_copper_frac,FALSE,CopperOre,130,Stone,260,,,,,,
+MineRock_Iron,FALSE,IronOre,13,Stone,26,,,,,,
 mudpile2,FALSE,IronScrap,4.3,LeatherScraps,0.86,WitheredBone,0.86,,,,
 mudpile2_frac,FALSE,IronScrap,4.3,LeatherScraps,0.86,WitheredBone,0.86,,,,
 mudpile,FALSE,IronScrap,6,WitheredBone,0.06,,,,,,
