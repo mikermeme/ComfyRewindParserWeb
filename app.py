@@ -14,34 +14,26 @@ st.set_page_col_config = st.set_page_config(
     layout="wide"
 )
 
-st.title("🛡️ Valheim Rewind Save File Parser")
-st.write("Upload a `.rewind` savefile to analyze and extract container inventories, breakable loots, and creature drops.")
+# Compact layout styling
+st.markdown("""
+<style>
+    .block-container {padding-top: 2rem !important; padding-bottom: 0rem !important;}
+    div[data-testid="stAlert"] {padding: 0.1rem 0.1rem !important; margin-bottom: 0rem !important; font-size: 0.8em !important; min-height: 0 !important;}
+    div[data-testid="stAlert"] p {margin: 0 !important;}
+    h1, h2, h3 {margin-top: 0.1rem !important; margin-bottom: 0.1rem !important;}
+    div[data-testid="stVerticalBlock"] > div {gap: 0rem !important; margin-bottom: 0rem !important;}
+    .stDownloadButton, .stDownloadButton > div {margin-top: 0 !important; padding-top: 0 !important;}
+</style>
+""", unsafe_allow_html=True)
 
-# Define expected reference file locations
-REF_FILES = {
-    "itemlist.csv": "Item list translations",
-    "breakablesLoot.csv": "Breakables drop rates database",
-    "creatureLoot.csv": "Creature drop rates database",
-    "prefabs.csv": "Prefab name mapping index",
-    "rewind.hexpat": "ZDO structural mapping patterns"
-}
+st.subheader("🛡️ Valheim Rewind Save File Parser")
+st.caption("Upload a `Rewind` to show items in containers, loot from breakable prefabs, and enemy drops.")
 
-# Check for presence of required reference databases
-missing_refs = []
-for ref, desc in REF_FILES.items():
-    if not os.path.exists(ref):
-        missing_refs.append(f"`{ref}` ({desc})")
+# Two-column layout: upload left, status right
+col_upload, col_status = st.columns([1, 1])
 
-if missing_refs:
-    st.error("⚠️ **Missing Required Reference Files in Root Directory!**")
-    st.write("Please place the following files in the same folder as `app.py` before uploading your save:")
-    for missing in missing_refs:
-        st.write(f"- {missing}")
-else:
-    st.success("✅ All required reference database tables loaded successfully.")
-
-# File uploader widget
-uploaded_file = st.file_uploader("Choose a save file")
+with col_upload:
+    uploaded_file = st.file_uploader("Choose a save file")
 
 def build_zip(files_dict):
     """Zips the output CSVs into an in-memory buffer."""
@@ -52,9 +44,7 @@ def build_zip(files_dict):
                 zip_file.write(file_path, arcname=os.path.basename(file_path))
     return zip_buffer.getvalue()
 
-if uploaded_file is not None and not missing_refs:
-    st.write("---")
-    
+if uploaded_file is not None:
     # Execute extraction pipeline in a temporary folder
     with tempfile.TemporaryDirectory() as temp_workspace:
         # Write uploaded file streams to disk temporarily so mmap/C-regex libraries can read it
@@ -74,15 +64,10 @@ if uploaded_file is not None and not missing_refs:
                     creature_loot_csv="creatureLoot.csv"
                 )
                 st.balloons()
-                st.success("Save file successfully parsed!")
-                
-                # Bundle everything into a neat master zip
-                zip_data = build_zip(outputs)
-                
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.write("### Review Parsed Data")
-                with col2:
+                with col_status:
+                    st.success("✅ Parsing complete")
+                    # Bundle everything into a neat master zip
+                    zip_data = build_zip(outputs)
                     st.download_button(
                         label="📦 Download All Tables (ZIP)",
                         data=zip_data,
@@ -99,13 +84,12 @@ if uploaded_file is not None and not missing_refs:
                 ])
                 
                 with tab1:
-                    st.subheader("Condensed Items")
                     st.write("Accumulated items from chests, itemstands, and armor stands.")
                     file_p = outputs["Condensed Items (Processed)"]
                     if os.path.exists(file_p):
                         df = pd.read_csv(file_p)
-                        st.dataframe(df, use_container_width=True)
-                        
+                        st.dataframe(df, use_container_width=True, height=600)
+
                         # Direct individual file download button
                         with open(file_p, "rb") as df_file:
                             st.download_button(
@@ -114,15 +98,14 @@ if uploaded_file is not None and not missing_refs:
                                 file_name=os.path.basename(file_p),
                                 mime="text/csv"
                             )
-                
+
                 with tab2:
-                    st.subheader("Breakables Loot Calculations")
                     st.write("Estimated drops based on split drop-rates for built/unbuilt prefabs.")
                     file_p = outputs["Breakables Loot (Processed)"]
                     if os.path.exists(file_p):
                         df = pd.read_csv(file_p)
-                        st.dataframe(df, use_container_width=True)
-                        
+                        st.dataframe(df, use_container_width=True, height=600)
+
                         with open(file_p, "rb") as df_file:
                             st.download_button(
                                 label="📥 Download Breakables Loot CSV",
@@ -130,15 +113,14 @@ if uploaded_file is not None and not missing_refs:
                                 file_name=os.path.basename(file_p),
                                 mime="text/csv"
                             )
-                
+
                 with tab3:
-                    st.subheader("Creature Loot Calculations")
                     st.write("Aggregated drops from all level-scaled creature instances.")
                     file_p = outputs["Creatures Loot (Processed)"]
                     if os.path.exists(file_p):
                         df = pd.read_csv(file_p)
-                        st.dataframe(df, use_container_width=True)
-                        
+                        st.dataframe(df, use_container_width=True, height=600)
+
                         with open(file_p, "rb") as df_file:
                             st.download_button(
                                 label="📥 Download Creature Loot CSV",
@@ -156,16 +138,17 @@ if uploaded_file is not None and not missing_refs:
                     with raw_tabs[0]:
                         raw_items_p = outputs["Items Table (Raw)"]
                         if os.path.exists(raw_items_p):
-                            st.dataframe(pd.read_csv(raw_items_p), use_container_width=True)
+                            st.dataframe(pd.read_csv(raw_items_p), use_container_width=True, height=1200)
                     with raw_tabs[1]:
                         raw_breaks_p = outputs["Breakables Prefabs (Raw)"]
                         if os.path.exists(raw_breaks_p):
-                            st.dataframe(pd.read_csv(raw_breaks_p), use_container_width=True)
+                            st.dataframe(pd.read_csv(raw_breaks_p), use_container_width=True, height=1200)
                     with raw_tabs[2]:
                         raw_creats_p = outputs["Creatures Prefabs (Raw)"]
                         if os.path.exists(raw_creats_p):
-                            st.dataframe(pd.read_csv(raw_creats_p), use_container_width=True)
+                            st.dataframe(pd.read_csv(raw_creats_p), use_container_width=True, height=1200)
                             
             except Exception as ex:
-                st.error(f"Failed to parse file. Ensure it is a valid, uncorrupted `.rewind` save.")
-                st.exception(ex)
+                with col_status:
+                    st.error(f"Failed to parse file.")
+                    st.exception(ex)
